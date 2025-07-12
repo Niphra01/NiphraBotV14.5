@@ -6,7 +6,10 @@ const path = require("node:path");
 const { Player } = require('discord-player')
 const { SpotifyExtractor } = require('@discord-player/extractor');
 const { YoutubeiExtractor } = require("discord-player-youtubei")
+<<<<<<< HEAD
 
+=======
+>>>>>>> dbda6315992df51f260d29732a6e6b3fe89301ca
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -21,9 +24,13 @@ const client = new Client({
 
 const player = new Player(client)
 
+<<<<<<< HEAD
 player.extractors.register(YoutubeiExtractor, {
     overrideBridgeMode: "ytmusic",
 })
+=======
+player.extractors.register(YoutubeiExtractor, {})
+>>>>>>> dbda6315992df51f260d29732a6e6b3fe89301ca
 player.extractors.register(SpotifyExtractor, {});
 
 
