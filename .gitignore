@@ -82,10 +82,7 @@ typings/
 # nuxt.js build output
 .nuxt
 
-<<<<<<< HEAD
-=======
 .gitignore
->>>>>>> dbda6315992df51f260d29732a6e6b3fe89301ca
 
 # rollup.js default build output
 dist/
