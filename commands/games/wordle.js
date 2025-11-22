@@ -320,7 +320,7 @@ module.exports = {
       });
       collector.on("end", async (reason) => {
         if (reason === "time") {
-          const BlEmbed = Embed(interaction,lang,`$You didn't guess the word at time. The word was: ${randomWord}`);
+          const BlEmbed = Embed(interaction,lang,`$You didn't guess the word on time. The word was: ${randomWord}`);
 
           await interaction.editReply({ embeds: [BlEmbed],files: [attachment2] });
           try {
