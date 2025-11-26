@@ -58,60 +58,54 @@ const SteamGames = async (client, channelResult, gamesColl) => {
             return;
         }
 
-        await Promise.all(
-            gameElements.map(async (i, el) => {
-                const appId = $(el).attr("data-ds-appid");
-                if (!appId) return;
+        for (const el of gameElements) {
+            const appId = $(el).attr("data-ds-appid");
+            if (!appId) return;
 
-                const gResult = await callGames(gamesColl);
-                if (gResult.some((item) => item.dataId === appId)) return;
+            const gResult = await callGames(gamesColl);
+            if (gResult.some((item) => item.dataId === appId)) return;
 
-                const gameURL = $(el).attr("href");
+            const gameURL = $(el).attr("href");
 
-                console.log("Processing game:", appId, gameURL);
+            console.log("Steam: ", appId, gameURL);
 
-                const gameResp = await fetch(gameURL, options);
-                const gamePage = await gameResp.text();
-                const $$ = cheerio.load(gamePage);
+            const gameResp = await fetch(gameURL, options);
+            const gamePage = await gameResp.text();
+            const $$ = cheerio.load(gamePage);
 
-                const title = $$(".apphub_AppName").first().text().trim();
-                const desc = $$(".game_description_snippet").text().trim();
-                const img = $$(".game_header_image_full").attr("src");
-                const endTime = $$(".game_purchase_discount_quantity ").text().trim();
-                const match = endTime.match(/(\d{1,2}\s+\w{3})\s*@\s*(\d{1,2}:\d{2}\s*(am|pm))/i);
-                let finalDate;
-                if (match) {
-                    const datePart = match[1];
-                    const timePart = match[2];
-                    const year = new Date().getFullYear();
+            const title = $$(".apphub_AppName").first().text().trim();
+            const desc = $$(".game_description_snippet").text().trim();
+            const img = $$(".game_header_image_full").attr("src");
+            const endTime = $$(".game_purchase_discount_quantity ").text().trim();
+            const match = endTime.match(/(\d{1,2}\s+\w{3})\s*@\s*(\d{1,2}:\d{2}\s*(am|pm))/i);
+            let finalDate;
+            if (match) {
+                const datePart = match[1];
+                const timePart = match[2];
+                const year = new Date().getFullYear();
 
-                    finalDate = `${datePart} ${year} ${timePart}`;
-                }
+                finalDate = `${datePart} ${year} ${timePart}`;
+            }
 
-                if (!title || !desc || !img) return;
+            if (!title || !desc || !img) return;
 
-                const embed = new EmbedBuilder()
-                    .setTitle(title)
-                    .setDescription(desc)
-                    .setImage(img)
-                    .setURL(gameURL)
-                    .addFields([
-                        { name: "Price", value: "Free" },
-                        {
-                            name: "Free Until",
-                            value: `${finalDate}` || "Unknown",
-                        },
-                        { name: "Platform", value: "Steam" }
-                    ]);
+            const embed = new EmbedBuilder()
+                .setTitle(title)
+                .setDescription(desc)
+                .setImage(img)
+                .setURL(gameURL)
+                .addFields([
+                    { name: "Price", value: "Free" },
+                    {
+                        name: "Free Until",
+                        value: `${finalDate}` || "Unknown",
+                    },
+                    { name: "Platform", value: "Steam" }
+                ]);
 
-                try {
-                    await FreegamesChannel(embed, client, channelResult);
-                    await DatabaseAdd(appId, title, gameURL, gamesColl);
-                } catch (err) {
-                    console.error("Error in FreegamesChannel:", err);
-                }
-            }).get()
-        );
+            await FreegamesChannel(embed, client, channelResult);
+            await DatabaseAdd(appId, title, gameURL, gamesColl);
+        }
     } catch (error) {
         console.error("Fetch error:", error);
     }
@@ -120,7 +114,7 @@ const SteamGames = async (client, channelResult, gamesColl) => {
 
 const EpicGames = async (client, channelResult, gamesColl) => {
     const url =
-        "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US,CN";
+        "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US#";
     const options = {
         method: "GET",
         headers: { "user-agent": process.env.USERAGENT },
@@ -128,49 +122,48 @@ const EpicGames = async (client, channelResult, gamesColl) => {
     try {
         const res = await fetch(url, options);
         const data = await res.json();
-        await Promise.all(
-            data.data.Catalog.searchStore.elements.map(async (el) => {
-                const gResult = await callGames(gamesColl);
-                if (!gResult.some((item) => item.dataId === el.id)) {
-                    console.log(`Processing game: ${el.title}`);
-                    if (
-                        el.promotions &&
-                        el.promotions.promotionalOffers.length !== 0 &&
-                        el.promotions.promotionalOffers[0].promotionalOffers[0].startDate < Date.now() !== 0 &&
-                        el.price.totalPrice.discountPrice === 0
-                    ) {
-                        console.log(`Found free game: ${el.title}`);
-                        const gameImage = el.keyImages.find((item) =>
-                            item.type === "Thumbnail" ||
-                            item.type === "DieselStoreFrontWide"
-                        )?.url;
-                        const gameURL = el.productSlug != null ? `https://store.epicgames.com/en-US/p/${el.productSlug}` : `https://store.epicgames.com/en-US/p/${el.catalogNs.mappings[0].pageSlug}`;
+        const elements = data.data.Catalog.searchStore.elements;
+        const freeGames = elements.filter((el) => {
+            if (!el.promotions || !el.promotions.promotionalOffers.length) return false;
 
-                        const epicEmbed = new EmbedBuilder()
-                            .setTitle(el.title.toString())
-                            .setDescription(el.description.toString())
-                            .setImage(gameImage)
-                            .setURL(gameURL)
-                            .addFields([
-                                { name: "Price", value: `Free` },
-                                {
-                                    name: "Free Until",
-                                    value: `${time(new Date(el.promotions.promotionalOffers[0].promotionalOffers[0].endDate), "f")}`,
-                                },
-                                {
-                                      name: "Platform", value: "Epic Games" 
-                                }
-                            ]);
-                        try {
-                            await FreegamesChannel(epicEmbed, client, channelResult);
-                            await DatabaseAdd(el.id, el.title, gameURL, gamesColl);
+            const isFree = el.price?.totalPrice?.discountPrice === 0;
+            const start = new Date(el.promotions.promotionalOffers[0].promotionalOffers[0].startDate);
+            const end = new Date(el.promotions.promotionalOffers[0].promotionalOffers[0].endDate);
+            const now = new Date();
+            return now >= start && now <= end && isFree;
+        });
+
+        for (const el of freeGames) {
+            const gResult = await callGames(gamesColl);
+            if (!gResult.some((item) => item.dataId === el.id)) {
+                console.log(`Epic Games: ${el.title}`);
+                const gameImage = el.keyImages.find((item) =>
+                    item.type === "Thumbnail" ||
+                    item.type === "DieselStoreFrontWide"
+                )?.url;
+                const gameURL = el.productSlug != null ? `https://store.epicgames.com/en-US/p/${el.productSlug}` : `https://store.epicgames.com/en-US/p/${el.catalogNs.mappings[0].pageSlug}`;
+
+                const epicEmbed = new EmbedBuilder()
+                    .setTitle(el.title.toString())
+                    .setDescription(el.description.toString())
+                    .setImage(gameImage)
+                    .setURL(gameURL)
+                    .addFields([
+                        { name: "Price", value: `Free` },
+                        {
+                            name: "Free Until",
+                            value: `${time(new Date(el.promotions.promotionalOffers[0].promotionalOffers[0].endDate), "f")}`,
+                        },
+                        {
+                            name: "Platform", value: "Epic Games"
                         }
-                        catch (err) { console.error("Error in sending FreegamesChannel:", err); }
-                    }
-                }
-            })
-        );
-    } catch (error) {
+                    ]);
+                await FreegamesChannel(epicEmbed, client, channelResult);
+                await DatabaseAdd(el.id, el.title, gameURL, gamesColl);
+            }
+        }
+    }
+    catch (error) {
         console.error("Error in EpicGames:", error);
     }
 };
@@ -179,7 +172,6 @@ const RedditFetch = async (client, channelResult, gamesColl) => {
     const conditions = [
         "gog.com",
         "store.ubi",
-        "origin.com",
         "ea.com",
         "xbox.com",
     ];
@@ -195,25 +187,21 @@ const RedditFetch = async (client, channelResult, gamesColl) => {
         const urlSet = new Set(gResult.map(item => item.dataURL));
 
         for (const post of posts) {
-            console.log("Checking Reddit post:", post.data.title);
             if (
                 dataFlair.some(el => post.data.link_flair_text?.includes(el)) &&
                 conditions.some((c) => post.data.url.includes(c))
             ) {
-                //if (!urlSet.has(post.data.url)) {
-                    fetchURL = post.data.url;
+                fetchURL = post.data.url;
+                if (fetchURL.includes("gog.com")) {
+                    fetchURL = fetchURL.replace(/\/\w{2}/, "/en");
+                } else {
+                    fetchURL = fetchURL.replace(/\/[a-z]{2}\//, "/en-us/");
+                }
 
-                    
-                        
-                     if (fetchURL.includes("gog.com")) {
-                        fetchURL = fetchURL.replace(/\/\w{2}/, "/en");
-                    }else{
-                        fetchURL = fetchURL.replace(/\/[a-z]{2}\//, "/en-us/");
-                    }
+                if (!urlSet.has(fetchURL)) {
+                    console.log("Reddit: ", post.data.title);
 
-                    const res = await fetch(fetchURL, { headers: { "User-Agent": process.env.USERAGENT ,"Accept-Language": "en-US,en;q=0.9"} });
-                    const finalUrl = res.url;
-                    console.log(finalUrl)
+                    const res = await fetch(fetchURL, { headers: { "User-Agent": process.env.USERAGENT, "Accept-Language": "en-US,en;q=0.9" } });
                     const html = await res.text();
                     const $ = cheerio.load(html);
 
@@ -222,6 +210,22 @@ const RedditFetch = async (client, channelResult, gamesColl) => {
                     const desc = $("meta[property='og:description']").attr("content") || "No description available.";
                     const img = $("meta[property='og:image']").attr("content") || null;
                     const platform = $("meta[property='og:site_name']").attr("content") || "Various";
+                    let endTime;
+                    if (fetchURL.includes("store.ubi")) {
+                        endTime = $$(".promotion-end-date-content ").text().trim();
+                    }
+                    else if (fetchURL.includes("gog.com")) {
+                        endTime = $$(".product-actions__time ").text().trim();
+                    }
+                    const match = endTime.match(/(\d{1,2}\s+\w{3})\s*@\s*(\d{1,2}:\d{2}\s*(am|pm))/i);
+                    let finalDate;
+                    if (match) {
+                        const datePart = match[1];
+                        const timePart = match[2];
+                        const year = new Date().getFullYear();
+
+                        finalDate = `${datePart} ${year} ${timePart}`;
+                    }
                     const gameEmbed = new EmbedBuilder()
                         .setTitle(title)
                         .setDescription(desc)
@@ -229,12 +233,16 @@ const RedditFetch = async (client, channelResult, gamesColl) => {
                         .setURL(fetchURL)
                         .addFields([
                             { name: "Price", value: "Free" },
+                            {
+                                name: "Free Until",
+                                value: `${finalDate}` || "Unknown",
+                            },
                             { name: "Platform", value: platform }
                         ]);
 
-                    await DatabaseAdd(post.data.id, post.data.title, post.data.url, gamesColl);
+                    await DatabaseAdd(post.data.id, post.data.title, fetchURL, gamesColl);
                     await FreegamesChannel(gameEmbed, client, channelResult);
-                //}
+                }
             }
         }
     } catch (error) {
