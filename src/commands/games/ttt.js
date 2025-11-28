@@ -157,7 +157,7 @@ const DrawTicTacToe = async (board) => {
   const context = canvas.getContext("2d");
 
   const background = await Canvas.loadImage(
-    "./src/images/BlankImage.png"
+    "./src/configs/images/BlankImage.png"
   );
   context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
@@ -166,7 +166,7 @@ const DrawTicTacToe = async (board) => {
   context.fillStyle = "#d7dadc";
 
   const emptySquare = await Canvas.loadImage(
-    "./src/images/EmptySquare.png"
+    "./src/configs/images/EmptySquare.png"
   );
 
   let squareSize = 62;

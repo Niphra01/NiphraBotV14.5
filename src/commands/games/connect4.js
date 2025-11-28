@@ -117,7 +117,7 @@ const DrawConnect4 = async (board) => {
     const context = canvas.getContext("2d");
 
     const background = await Canvas.loadImage(
-        "./src/images/BlankImage.png"
+        "./src/configs/images/BlankImage.png"
     );
     context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
@@ -126,13 +126,13 @@ const DrawConnect4 = async (board) => {
     context.fillStyle = "#d7dadc";
 
     const blueCircle = await Canvas.loadImage(
-        "./src/images/BlueCircle.png"
+        "./src/configs/images/BlueCircle.png"
     );
     const redCircle = await Canvas.loadImage(
-        "./src/images/RedCircle.png"
+        "./src/configs/images/RedCircle.png"
     );
     const emptyCircle = await Canvas.loadImage(
-        "./src/images/EmptyCircle.png"
+        "./src/configs/images/EmptyCircle.png"
     );
     let circle = emptyCircle;
     let squareSize = 62;
