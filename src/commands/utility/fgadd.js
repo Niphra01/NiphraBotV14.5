@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const Mongo = require("../../src/configs/DbConfig");
+const Mongo = require("../../services/gameDatabaseService");
 
 
 module.exports = {

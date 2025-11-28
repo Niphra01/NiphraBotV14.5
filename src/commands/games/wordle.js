@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, userMention } = require("discord.js");
 const Canvas = require("canvas");
-const words = require("../../src/configs/WordList.json");
+const words = require("../../configs/WordList.json");
 let user = [];
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,26 +1,23 @@
 require("dotenv").config();
 const { REST, Routes } = require('discord.js');
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
 const { CLIENT_ID, TOKEN } = process.env;
 
 const commands = [];
 
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
 
-for (const folder of commandFolders) {
+const folders = fs.readdirSync('./src/commands');
 
-    const commandsPath = path.join(foldersPath, folder);
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+for (const folder of folders) {
+    const files = fs.readdirSync(`./src/commands/${folder}`).filter(file => file.endsWith('.js'));
 
-    for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = require(filePath);
+    for (const file of files) {
+        const command = require(`./src/commands/${folder}/${file}`);
+
         if ('data' in command && 'execute' in command) {
             commands.push(command.data.toJSON());
         } else {
-            console.log(`The command at ${filePath} is missing a required "data" or "execute" property.`);
+           console.warn(`[WARNING]: ${command} don't have "data" or "execute"!`);
         }
     }
 }
@@ -28,8 +25,6 @@ const rest = new REST().setToken(TOKEN);
 
 (async () => {
     try {
-
-
         const data = await rest.put(
             Routes.applicationCommands(CLIENT_ID),
             { body: commands },

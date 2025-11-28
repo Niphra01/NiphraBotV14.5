@@ -1,5 +1,5 @@
 const { Events, ActivityType } = require('discord.js');
-const { GetGames } = require('../../src/freeGamesFetch');
+const { runAllScrapers } = require('../../services/scraperScheduler');
 
 module.exports = {
     name: Events.ClientReady,
@@ -7,9 +7,9 @@ module.exports = {
     async execute(client) {
         client.user.setActivity('Git - Gud', { type: ActivityType.Competing })
         console.log(`Ready! Logged in as ${client.user.tag}`)
-	await GetGames(client);
+	await runAllScrapers(client);
         setInterval(async function () {
-            await GetGames(client);
+            await runAllScrapers(client);
         }, 1000 * 60 * 60)
     },
 };

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { useMainPlayer, QueryType } = require('discord-player')
-const { playerOptions } = require('../../src/configs/playerConfigs');
+const { playerOptions } = require('../../configs/playerConfigs');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
